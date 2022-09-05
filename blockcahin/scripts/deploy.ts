@@ -1,30 +1,40 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-import { ethers } from "hardhat";
+import { ethers } from 'hardhat'
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+	const gameContractFactory = await ethers.getContractFactory('MyEpicGame')
+	const gameContract = await gameContractFactory.deploy(
+		[
+			'Capybara',
+			'Cat',
+			'Dog',
+			'Rabbit',
+			'Buffalo',
+			'Boar',
+			'Deer',
+			'Iguana',
+		],
+		[
+			'https://asoncs.github.io/epic-game/images/capybara.jpg',
+			'https://asoncs.github.io/epic-game/images/cat.jpg',
+			'https://asoncs.github.io/epic-game/images/dog.jpg',
+			'https://asoncs.github.io/epic-game/images/rabbit.jpg',
+			'https://asoncs.github.io/epic-game/images/buffalo.jpg',
+			'https://asoncs.github.io/epic-game/images/boar.jpg',
+			'https://asoncs.github.io/epic-game/images/deer.jpg',
+			'https://asoncs.github.io/epic-game/images/iguana.jpg',
+		],
+		[500, 400, 700, 100, 1000, 800, 200, 300],
+		[700, 900, 500, 1000, 300, 400, 800, 600]
+	)
 
-  // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+	await gameContract.deployed()
 
-  await greeter.deployed();
+	console.log('Contrato implantado no endereço:', gameContract.address)
 
-  console.log("Greeter deployed to:", greeter.address);
+	console.log('Fim do deploy e mint!')
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+	console.error(error)
+	process.exitCode = 1
+})

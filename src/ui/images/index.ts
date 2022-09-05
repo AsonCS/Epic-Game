@@ -1,0 +1,1 @@
+export const test = `${process.env.PUBLIC_URL}/images/test.jpg`
