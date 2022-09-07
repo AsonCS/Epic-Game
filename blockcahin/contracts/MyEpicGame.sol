@@ -37,9 +37,16 @@ contract MyEpicGame is ERC721 {
     struct BigBoss {
         string name;
         string imageURI;
-        uint256 attackDamage;
     }
-    BigBoss public bigBoss;
+
+    event CharacterNFTMinted(
+        address sender,
+        uint256 tokenId,
+        uint256 characterIndex
+    );
+    event AttackComplete(uint256 newPlayerHp, uint256 newPlayerPoints);
+
+    BigBoss private bigBoss;
 
     // Uma pequena array vai nos ajudar a segurar os dados padrao dos
     // nossos personagens. Isso vai ajudar muito quando mintarmos nossos
@@ -52,7 +59,7 @@ contract MyEpicGame is ERC721 {
     // Um mapping de um endereco => tokenId das NFTs, nos da um
     // jeito facil de armazenar o dono da NFT e referenciar ele
     // depois.
-    mapping(address => uint256) private holders;
+    mapping(address => uint256[]) private holders;
 
     // Dados passados no contrato quando ele for criado inicialmente,
     // inicializando os personagens.
@@ -66,15 +73,10 @@ contract MyEpicGame is ERC721 {
         uint256[] memory characterHp,
         uint256[] memory characterDodgeSkill,
         string memory bossName,
-        string memory bossImageURI,
-        uint256 bossAttackDamage
-    ) payable ERC721("Animals", "ANMA") {
+        string memory bossImageURI
+    ) ERC721("Animals", "ANMA") {
         // Inicializa o boss. Salva na nossa variável global de estado "bigBoss".
-        bigBoss = BigBoss({
-            name: bossName,
-            imageURI: bossImageURI,
-            attackDamage: bossAttackDamage
-        });
+        bigBoss = BigBoss({name: bossName, imageURI: bossImageURI});
 
         // Faz um loop por todos os personagens e salva os valores deles no
         // contrato para que possamos usa-los depois para mintar as NFTs
@@ -94,7 +96,7 @@ contract MyEpicGame is ERC721 {
 
         // Eu incrementei tokenIds aqui para que minha primeira NFT tenha o ID 1.
         // Mais nisso na aula!
-        _tokenIds.increment();
+        // _tokenIds.increment();
     }
 
     // Usuarios vao poder usar essa funcao e pegar a NFT baseado no personagem que mandarem!
@@ -125,10 +127,16 @@ contract MyEpicGame is ERC721 {
         // );
 
         // Mantem um jeito facil de ver quem possui a NFT
-        holders[msg.sender] = newItemId;
+        if (holders[msg.sender].length > 0) {
+            holders[msg.sender].push(newItemId);
+        } else {
+            holders[msg.sender] = [newItemId];
+        }
 
         // Incrementa o tokenId para a proxima pessoa que usar.
         _tokenIds.increment();
+
+        emit CharacterNFTMinted(msg.sender, newItemId, _characterIndex);
     }
 
     function tokenURI(uint256 _tokenId)
@@ -137,7 +145,9 @@ contract MyEpicGame is ERC721 {
         override
         returns (string memory)
     {
-        CharacterAttributes memory charAttributes = nfts[_tokenId - 1];
+        require((nfts.length > _tokenId), "Este index nao existe");
+
+        CharacterAttributes memory charAttributes = nfts[_tokenId];
 
         string memory strHp = Strings.toString(charAttributes.hp);
         string memory strMaxHp = Strings.toString(charAttributes.maxHp);
@@ -175,8 +185,13 @@ contract MyEpicGame is ERC721 {
         return output;
     }
 
-    function getAttack() public {
-        uint256 nftTokenIdOfPlayer = holders[msg.sender] - 1;
+    function getAttack(uint256 _nftIndex) public {
+        require(
+            (holders[msg.sender].length > _nftIndex),
+            "Este index nao existe"
+        );
+
+        uint256 nftTokenIdOfPlayer = holders[msg.sender][_nftIndex];
         CharacterAttributes storage player = nfts[nftTokenIdOfPlayer];
 
         // Tenha certeza que o hp do jogador é maior que 0.
@@ -185,26 +200,89 @@ contract MyEpicGame is ERC721 {
             "Error: personagem precisa ter HP para atacar o boss."
         );
 
-        uint256 damage = ((block.timestamp) % bigBoss.attackDamage) + 10;
+        uint256 timestamp = block.timestamp;
+        uint256 percentOfHp = 0;
 
-        console.log(
-            "\n player.hp=%s, damage=%s, bigBoss.attackDamage=%s",
-            Strings.toString(player.hp),
-            Strings.toString(damage),
-            Strings.toString(bigBoss.attackDamage)
-        );
+        if ((timestamp % 17) == 0) {
+            percentOfHp = 10;
+        } else if ((timestamp % 13) == 0) {
+            percentOfHp = 8;
+        } else if ((timestamp % 11) == 0) {
+            percentOfHp = 6;
+        } else if ((timestamp % 7) == 0) {
+            percentOfHp = 5;
+        } else if ((timestamp % 5) == 0) {
+            percentOfHp = 4;
+        } else if ((timestamp % 3) == 0) {
+            percentOfHp = 3;
+        } else if ((timestamp % 2) == 0) {
+            percentOfHp = 2;
+        }
+
+        uint256 damage = ((player.maxHp / 10) * percentOfHp);
 
         // Permite que o boss ataque o jogador.
         if (player.hp < damage) {
             player.hp = 0;
         } else {
             player.hp = player.hp - damage;
+            player.hp += player.dodgeSkill;
         }
 
-        console.log(" player.hp=%s", Strings.toString(player.hp));
+        player.points += damage + player.dodgeSkill;
+
+        // console.log(
+        //     string(
+        //         abi.encodePacked(
+        //             "\n",
+        //             "percentOfHp=",
+        //             Strings.toString(percentOfHp * 10),
+        //             " | damage=",
+        //             Strings.toString(damage),
+        //             " | timestamp=",
+        //             Strings.toString(timestamp),
+        //             " | player.hp=",
+        //             Strings.toString(player.hp),
+        //             " | player.points=",
+        //             Strings.toString(player.points),
+        //             " | player.maxHp=",
+        //             Strings.toString(player.maxHp),
+        //             " | player.dodgeSkill=",
+        //             Strings.toString(player.dodgeSkill),
+        //             "\n"
+        //         )
+        //     )
+        // );
+
+        emit AttackComplete(player.hp, player.points);
     }
 
-    function getCharacterAttributes()
+    function getUserNfts() public view returns (CharacterAttributes[] memory) {
+        // Pega o tokenId do personagem NFT do usuário
+        // Se o usuário tiver um tokenId no map, retorne seu personagem
+        // Senão, retorne um personagem vazio
+
+        // Pega o tokenId do personagem NFT do usuario
+        uint256[] memory userNftIndexes = holders[msg.sender];
+        CharacterAttributes[] memory userNfts = new CharacterAttributes[](
+            userNftIndexes.length
+        );
+        for (uint256 i = 0; i < userNftIndexes.length; i += 1) {
+            userNfts[i] = nfts[userNftIndexes[i]];
+        }
+        // Se o usuario tiver um tokenId no map, retorne seu personagem
+        // if (userNftTokenId > 0) {
+        //     return nfts[userNftTokenId];
+        // }
+        // Senão, retorne um personagem vazio
+        // else {
+        //     CharacterAttributes memory emptyStruct;
+        //     return emptyStruct;
+        // }
+        return userNfts;
+    }
+
+    function getDefaultCharacters()
         public
         view
         returns (CharacterAttributes[] memory)
@@ -214,5 +292,9 @@ contract MyEpicGame is ERC721 {
 
     function getNfts() public view returns (CharacterAttributes[] memory) {
         return nfts;
+    }
+
+    function getBigBoss() public view returns (BigBoss memory) {
+        return bigBoss;
     }
 }

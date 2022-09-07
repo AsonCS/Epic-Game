@@ -1,1 +1,1 @@
-export const test = `${process.env.PUBLIC_URL}/images/test.jpg`
+export const jaguar = `${process.env.PUBLIC_URL}/images/jaguar.jpg`

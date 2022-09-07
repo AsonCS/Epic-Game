@@ -24,12 +24,32 @@ async function main() {
 			'https://asoncs.github.io/epic-game/images/iguana.jpg',
 		],
 		[500, 400, 700, 100, 1000, 800, 200, 300],
-		[700, 900, 500, 1000, 300, 400, 800, 600]
+		[70, 90, 50, 100, 30, 40, 80, 60],
+		'Jaguar',
+		'https://asoncs.github.io/epic-game/images/jaguar.jpg',
+		{ gasLimit: 30000000 }
 	)
 
 	await gameContract.deployed()
 
 	console.log('Contrato implantado no endereço:', gameContract.address)
+
+	let txn = await gameContract.mintCharacterNFT(0)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(1)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(2)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(3)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(4)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(5)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(6)
+	await txn.wait()
+	txn = await gameContract.mintCharacterNFT(7)
+	await txn.wait()
 
 	console.log('Fim do deploy e mint!')
 }

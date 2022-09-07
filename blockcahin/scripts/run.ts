@@ -25,24 +25,36 @@ async function main() {
 			'https://asoncs.github.io/epic-game/images/iguana.jpg',
 		],
 		[500, 400, 700, 100, 1000, 800, 200, 300],
-		[700, 900, 500, 1000, 300, 400, 800, 600],
+		[70, 90, 50, 100, 30, 40, 80, 60],
 		'Jaguar',
 		'https://asoncs.github.io/epic-game/images/jaguar.jpg',
-		100
-		// { gasLimit: 30000000 }
+		{ gasLimit: 30000000 }
 	)
 
 	await gameContract.deployed()
 
 	console.log('Contrato implantado no endereço:', gameContract.address)
 
-	const allCharacterAttributes = await gameContract.getCharacterAttributes()
+	console.log('\n\n getUserNfts')
+	await gameContract.getUserNfts().then((nfts) => {
+		nfts.forEach((nft) => {
+			console.log(
+				`nft.name: ${nft.name} | `,
+				`nft.hp: ${nft.hp} | `,
+				`nft.hp: ${nft.points}`
+			)
+		})
+	})
+
+	console.log('\n\n getCharacterAttributes')
+	const allCharacterAttributes = await gameContract.getDefaultCharacters()
 	allCharacterAttributes.forEach((char) => {
 		// console.log(
 		// 	`{\n  Nome: ${char.name},  Vida: ${char.hp},  Habilidade de Esquiva: ${char.dodgeSkill},  Img: ${char.imageURI}\n}`
 		// )
 	})
 
+	console.log('\n\n mintCharacterNFT')
 	let txn
 	// Só temos três personagens.
 	// Uma NFT com personagem no index 2 da nossa array.
@@ -51,40 +63,68 @@ async function main() {
 	txn = await gameContract.mintCharacterNFT(0)
 	await txn.wait()
 
+	console.log('\n\n tokenURI')
 	// (Pega o valor da URI da NFT
-	let returnedTokenUri = await gameContract.tokenURI(1)
+	let returnedTokenUri = await gameContract.tokenURI(0)
 	// console.log('Token URI:', returnedTokenUri)
-	returnedTokenUri = await gameContract.tokenURI(2)
+	returnedTokenUri = await gameContract.tokenURI(1)
 	// console.log('Token URI:', returnedTokenUri)
-
-	const allNfts = await gameContract.getNfts()
-	allNfts.forEach((nft) => {
-		// console.log(nft)
+	await gameContract.tokenURI(2).catch((error) => {
+		console.error(error)
 	})
+
+	console.log('\n\n getNfts')
+	// await gameContract.getNfts().then((nfts) => {
+	// 	nfts.forEach((nft) => {
+	// 		console.log(
+	// 			`nft.name: ${nft.name} | `,
+	// 			`nft.hp: ${nft.hp} | `,
+	// 			`nft.hp: ${nft.points}`
+	// 		)
+	// 	})
+	// })
 
 	// console.log(await gameContract.bigBoss())
 
-	txn = await gameContract.getAttack()
+	console.log('\n\n NFT 0')
+	txn = await gameContract.getAttack(0)
 	await txn.wait()
-	await sleep(2456)
-	txn = await gameContract.getAttack()
+	txn = await gameContract.getAttack(0)
 	await txn.wait()
-	await sleep(2541)
-	txn = await gameContract.getAttack()
-	await txn.wait()
-	await sleep(3987)
-	txn = await gameContract.getAttack()
-	await txn.wait()
-	await sleep(4587)
-	txn = await gameContract.getAttack()
-	await txn.wait()
-	await sleep(1987)
-	txn = await gameContract.getAttack()
-	await txn.wait()
-}
+	// txn = await gameContract.getAttack(0)
+	// await txn.wait()
+	// txn = await gameContract.getAttack(0)
+	// await txn.wait()
 
-async function sleep(ms: number) {
-	return new Promise((resolve) => setTimeout(resolve, ms))
+	console.log('\n\n NFT 1')
+	txn = await gameContract.getAttack(1)
+	await txn.wait()
+	txn = await gameContract.getAttack(1)
+	await txn.wait()
+	// txn = await gameContract.getAttack(1)
+	// await txn.wait()
+	// txn = await gameContract.getAttack(1)
+	// await txn.wait()
+
+	await gameContract.getAttack(2).catch((error) => {
+		console.error(error)
+	})
+
+	console.log('\n\n getUserNfts')
+	await gameContract.getUserNfts().then((nfts) => {
+		nfts.forEach((nft) => {
+			console.log(
+				`nft.name: ${nft.name} | `,
+				`nft.hp: ${nft.hp} | `,
+				`nft.hp: ${nft.points}`
+			)
+		})
+	})
+
+	console.log('\n\n bigBoss')
+	await gameContract.getBigBoss().then((bigBoss) => {
+		console.log(`bigBoss: ${bigBoss.name} | ${bigBoss.imageURI}`)
+	})
 }
 
 main().catch((error) => {
